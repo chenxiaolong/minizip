@@ -10,6 +10,7 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 
 set(SRC_LIST
     ioapi.c
+    ioapi_buf.c
     unzip.c
     zip.c
 )
