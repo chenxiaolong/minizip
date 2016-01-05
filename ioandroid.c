@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,9 +28,11 @@ typedef struct
     int fd;
     int filenameLength;
     void *filename;
+    int shouldClose;
 } FILE_IOANDROID;
 
-static voidpf file_build_ioandroid(int fd, const char *filename)
+static voidpf file_build_ioandroid(int fd, const char *filename,
+                                   int shouldClose)
 {
     FILE_IOANDROID *ioandroid = NULL;
     if (fd < 0) {
@@ -40,8 +43,27 @@ static voidpf file_build_ioandroid(int fd, const char *filename)
     ioandroid->fd = fd;
     ioandroid->filenameLength = strlen(filename) + 1;
     ioandroid->filename = strdup(filename);
+    ioandroid->shouldClose = shouldClose;
 
     return (voidpf) ioandroid;
+}
+
+static int convert_to_int(const char *str, int *out)
+{
+    char *end;
+    errno = 0;
+    long num = strtol(str, &end, 10);
+    if (errno == ERANGE || num < INT_MIN || num > INT_MAX
+            || *str == '\0' || *end != '\0') {
+        return -1;
+    }
+    *out = (int) num;
+    return 0;
+}
+
+static int fd_is_valid(int fd)
+{
+    return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
 }
 
 voidpf ZCALLBACK android_open64_file_func(voidpf opaque, const void *filename,
@@ -49,6 +71,7 @@ voidpf ZCALLBACK android_open64_file_func(voidpf opaque, const void *filename,
 {
     int fd = -1;
     int flags = 0;
+    int shouldClose = 1;
 
     if ((mode & ZLIB_FILEFUNC_MODE_READWRITEFILTER) == ZLIB_FILEFUNC_MODE_READ) {
         flags |= O_LARGEFILE | O_RDONLY;
@@ -59,8 +82,24 @@ voidpf ZCALLBACK android_open64_file_func(voidpf opaque, const void *filename,
     }
 
     if (filename && flags) {
-        fd = OPEN_FUNC(filename, flags, 0666);
-        return file_build_ioandroid(fd, (const char *) filename);
+        // Hack for /proc/self/fd/<FD> filenames, since minizip has no API for
+        // opening file descriptors
+        static const char *prefix = "/proc/self/fd/";
+        const char *ptr = (const char *) filename;
+        if (strncmp(ptr, prefix, strlen(prefix)) == 0) {
+            ptr += strlen(prefix);
+            if (convert_to_int(ptr, &fd) < 0) {
+                return NULL;
+            }
+            if (!fd_is_valid(fd)) {
+                return NULL;
+            }
+            shouldClose = 0;
+        } else {
+            fd = OPEN_FUNC((const char *) filename, flags, 0666);
+            shouldClose = 1;
+        }
+        return file_build_ioandroid(fd, (const char *) filename, shouldClose);
     }
 
     return NULL;
@@ -179,7 +218,7 @@ long ZCALLBACK android_seek64_file_func(voidpf opaque, voidpf stream,
 int ZCALLBACK android_close_file_func(voidpf opaque, voidpf stream)
 {
     FILE_IOANDROID *ioandroid = NULL;
-    int ret;
+    int ret = 0;
 
     if (!stream) {
         return -1;
@@ -191,7 +230,9 @@ int ZCALLBACK android_close_file_func(voidpf opaque, voidpf stream)
         free(ioandroid->filename);
     }
 
-    ret = close(ioandroid->fd);
+    if (ioandroid->shouldClose) {
+        ret = close(ioandroid->fd);
+    }
     free(ioandroid);
     return ret;
 }
