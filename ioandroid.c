@@ -15,6 +15,79 @@
 #define OPEN_FUNC open
 #endif
 
+int *fd_list = NULL;
+size_t fd_list_capacity = 0;
+size_t fd_list_size = 0;
+
+int add_fd(int fd)
+{
+    if (fd_list_size == fd_list_capacity) {
+        size_t new_capacity;
+        if (fd_list_capacity == 0) {
+            new_capacity = 1;
+        } else {
+            new_capacity = fd_list_capacity << 1;
+        }
+
+        int *new_list = (int *) realloc(fd_list, new_capacity * sizeof(int));
+        if (!new_list) {
+            return -1;
+        }
+
+        fd_list = new_list;
+        fd_list_capacity = new_capacity;
+    }
+
+    fd_list[fd_list_size++] = fd;
+    return 0;
+}
+
+int remove_fd(int fd)
+{
+    size_t old_size = fd_list_size;
+    size_t i, j;
+    for (i = 0; i < fd_list_size; ++i) {
+        if (fd_list[i] == fd) {
+            for (j = i + 1; j < fd_list_size; ++i, ++j) {
+                fd_list[i] = fd_list[j];
+            }
+            --fd_list_size;
+            break;
+        }
+    }
+    if (old_size == fd_list_size) {
+        // Nothing removed
+        return 1;
+    }
+
+    if (fd_list_size <= fd_list_capacity >> 1)
+    {
+        size_t new_capacity = fd_list_capacity >> 1;
+        int *new_list = (int *) realloc(fd_list, new_capacity * sizeof(int));
+        if (!new_list && new_capacity > 0) {
+            // Oh well...
+            return 0;
+        }
+        fd_list = new_list;
+        fd_list_capacity = new_capacity;
+    }
+
+    return 0;
+}
+
+int has_fd(int fd)
+{
+    size_t i;
+    for (i = 0; i < fd_list_size; ++i) {
+        if (fd_list[i] == fd) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+///
+
 voidpf ZCALLBACK android_open64_file_func OF((voidpf opaque, const void *filename, int mode));
 uLong ZCALLBACK android_read_file_func OF((voidpf opaque, voidpf stream, void *buf, uLong size));
 uLong ZCALLBACK android_write_file_func OF((voidpf opaque, voidpf stream, const void *buf, uLong size));
@@ -94,11 +167,22 @@ voidpf ZCALLBACK android_open64_file_func(voidpf opaque, const void *filename,
             if (!fd_is_valid(fd)) {
                 return NULL;
             }
+
+            // Make sure we haven't already used the fd
+            if (has_fd(fd)) {
+                return NULL;
+            }
+
+            if (add_fd(fd) < 0) {
+                return NULL;
+            }
+
             shouldClose = 0;
         } else {
             fd = OPEN_FUNC((const char *) filename, flags, 0666);
             shouldClose = 1;
         }
+
         return file_build_ioandroid(fd, (const char *) filename, shouldClose);
     }
 
@@ -232,6 +316,8 @@ int ZCALLBACK android_close_file_func(voidpf opaque, voidpf stream)
 
     if (ioandroid->shouldClose) {
         ret = close(ioandroid->fd);
+    } else {
+        remove_fd(ioandroid->fd);
     }
     free(ioandroid);
     return ret;
