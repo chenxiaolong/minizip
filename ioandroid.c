@@ -173,6 +173,11 @@ voidpf ZCALLBACK android_open64_file_func(voidpf opaque, const void *filename,
                 return NULL;
             }
 
+            // Seek to beginning of found
+            if (lseek64(fd, 0, SEEK_SET) < 0) {
+                return NULL;
+            }
+
             if (add_fd(fd) < 0) {
                 return NULL;
             }
