@@ -1,6 +1,9 @@
 #ifndef _IOANDROID_H
 #define _IOANDROID_H
 
+#include "zlib.h"
+#include "ioapi.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
