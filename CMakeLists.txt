@@ -29,3 +29,12 @@ set_target_properties(
     PROPERTIES
     POSITION_INDEPENDENT_CODE 1
 )
+
+if(NOT MSVC)
+    set_target_properties(
+        minizip
+        PROPERTIES
+        C_STANDARD 99
+        C_STANDARD_REQUIRED 1
+    )
+endif()
