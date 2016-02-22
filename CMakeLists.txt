@@ -16,10 +16,9 @@ set(SRC_LIST
 )
 
 if (WIN32)
-    set(SRC_LIST
-        ${SRC_LIST}
-        iowin32.c
-    )
+    list(APPEND SRC_LIST iowin32.c)
+elseif(ANDROID)
+    list(APPEND SRC_LIST ioandroid.c)
 endif()
 
 add_library(minizip STATIC ${SRC_LIST})
