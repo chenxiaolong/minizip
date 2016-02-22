@@ -21,6 +21,15 @@ elseif(ANDROID)
     list(APPEND SRC_LIST ioandroid.c)
 endif()
 
+if(NOT MSVC)
+    add_definitions(
+        -Wno-empty-body
+        -Wno-pedantic
+        -Wno-type-limits
+        -Wno-unused-parameter
+    )
+endif()
+
 add_library(minizip STATIC ${SRC_LIST})
 #target_link_libraries(minizip ${ZLIB_LIBRARIES})
 
