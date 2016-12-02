@@ -30,20 +30,41 @@ if(NOT MSVC)
     )
 endif()
 
-add_library(minizip STATIC ${SRC_LIST})
-#target_link_libraries(minizip ${ZLIB_LIBRARIES})
+add_library(minizip-static STATIC ${SRC_LIST})
+add_library(minizip-shared SHARED ${SRC_LIST})
+
+target_compile_options(minizip-shared PRIVATE -fvisibility=default)
+
+target_link_libraries(minizip-shared ${ZLIB_LIBRARIES})
 
 set_target_properties(
-    minizip
+    minizip-static minizip-shared
     PROPERTIES
     POSITION_INDEPENDENT_CODE 1
+)
+set_target_properties(
+    minizip-shared
+    PROPERTIES
+    OUTPUT_NAME minizip
 )
 
 if(NOT MSVC)
     set_target_properties(
-        minizip
+        minizip-static minizip-shared
         PROPERTIES
         C_STANDARD 99
         C_STANDARD_REQUIRED 1
+    )
+endif()
+
+# Install minizip
+if(DEFINED MBP_BUILD_TARGET
+        AND (${MBP_BUILD_TARGET} STREQUAL android-app
+                OR ${MBP_BUILD_TARGET} STREQUAL desktop))
+    install(
+        TARGETS minizip-shared
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        RUNTIME DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
+        #ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
     )
 endif()
