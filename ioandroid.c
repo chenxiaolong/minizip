@@ -88,13 +88,13 @@ int has_fd(int fd)
 
 ///
 
-voidpf ZCALLBACK android_open64_file_func OF((voidpf opaque, const void *filename, int mode));
-uLong ZCALLBACK android_read_file_func OF((voidpf opaque, voidpf stream, void *buf, uLong size));
-uLong ZCALLBACK android_write_file_func OF((voidpf opaque, voidpf stream, const void *buf, uLong size));
-ZPOS64_T ZCALLBACK android_tell64_file_func OF((voidpf opaque, voidpf stream));
-long ZCALLBACK android_seek64_file_func OF((voidpf opaque, voidpf stream, ZPOS64_T offset, int origin));
-int ZCALLBACK android_close_file_func OF((voidpf opaque, voidpf stream));
-int ZCALLBACK android_error_file_func OF((voidpf opaque, voidpf stream));
+voidpf   ZCALLBACK android_open64_file_func (voidpf opaque, const void *filename, int mode);
+uint32_t ZCALLBACK android_read_file_func   (voidpf opaque, voidpf stream, void *buf, uint32_t size);
+uint32_t ZCALLBACK android_write_file_func  (voidpf opaque, voidpf stream, const void *buf, uint32_t size);
+uint64_t ZCALLBACK android_tell64_file_func (voidpf opaque, voidpf stream);
+long     ZCALLBACK android_seek64_file_func (voidpf opaque, voidpf stream, uint64_t offset, int origin);
+int      ZCALLBACK android_close_file_func  (voidpf opaque, voidpf stream);
+int      ZCALLBACK android_error_file_func  (voidpf opaque, voidpf stream);
 
 typedef struct
 {
@@ -195,7 +195,7 @@ voidpf ZCALLBACK android_open64_file_func(voidpf opaque, const void *filename,
 }
 
 voidpf ZCALLBACK android_opendisk64_file_func(voidpf opaque, voidpf stream,
-                                              int number_disk, int mode)
+                                              uint32_t number_disk, int mode)
 {
     FILE_IOANDROID *ioandroid = NULL;
     char *diskFilename = NULL;
@@ -226,40 +226,40 @@ voidpf ZCALLBACK android_opendisk64_file_func(voidpf opaque, voidpf stream,
     return ret;
 }
 
-uLong ZCALLBACK android_read_file_func(voidpf opaque, voidpf stream,
-                                       void *buf, uLong size)
+uint32_t ZCALLBACK android_read_file_func(voidpf opaque, voidpf stream,
+                                          void *buf, uint32_t size)
 {
     FILE_IOANDROID *ioandroid = NULL;
-    uLong ret;
+    uint32_t ret;
 
     if (!stream) {
         return -1;
     }
 
     ioandroid = (FILE_IOANDROID *) stream;
-    ret = (uLong) read(ioandroid->fd, buf, (size_t) size);
+    ret = (uint32_t) read(ioandroid->fd, buf, (size_t) size);
     return ret;
 }
 
-uLong ZCALLBACK android_write_file_func(voidpf opaque, voidpf stream,
-                                        const void *buf, uLong size)
+uint32_t ZCALLBACK android_write_file_func(voidpf opaque, voidpf stream,
+                                           const void *buf, uint32_t size)
 {
     FILE_IOANDROID *ioandroid = NULL;
-    uLong ret;
+    uint32_t ret;
 
     if (!stream) {
         return -1;
     }
 
     ioandroid = (FILE_IOANDROID *) stream;
-    ret = (uLong) write(ioandroid->fd, buf, (size_t) size);
+    ret = (uint32_t) write(ioandroid->fd, buf, (size_t) size);
     return ret;
 }
 
-ZPOS64_T ZCALLBACK android_tell64_file_func(voidpf opaque, voidpf stream)
+uint64_t ZCALLBACK android_tell64_file_func(voidpf opaque, voidpf stream)
 {
     FILE_IOANDROID *ioandroid = NULL;
-    ZPOS64_T ret;
+    uint64_t ret;
 
     if (!stream) {
         return -1;
@@ -271,7 +271,7 @@ ZPOS64_T ZCALLBACK android_tell64_file_func(voidpf opaque, voidpf stream)
 }
 
 long ZCALLBACK android_seek64_file_func(voidpf opaque, voidpf stream,
-                                        ZPOS64_T offset, int origin)
+                                        uint64_t offset, int origin)
 {
     FILE_IOANDROID *ioandroid = NULL;
     int whence;

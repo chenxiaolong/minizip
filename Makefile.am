@@ -16,6 +16,7 @@ iowin32_h = iowin32.h
 endif
 
 libminizip_la_SOURCES = \
+	crypt.c \
 	ioapi.c \
 	unzip.c \
 	zip.c \
@@ -36,8 +37,12 @@ pkgconfig_DATA = minizip.pc
 
 EXTRA_PROGRAMS = miniunzip minizip
 
-miniunzip_SOURCES = miniunz.c
+miniunzip_SOURCES = \
+	minishared.c \
+	miniunz.c
 miniunzip_LDADD = libminizip.la
 
-minizip_SOURCES = minizip.c
+minizip_SOURCES = \
+	minizip.c \
+	minishared.c
 minizip_LDADD = libminizip.la -lz
