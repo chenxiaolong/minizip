@@ -130,8 +130,8 @@ if(USE_AES)
 
   add_definitions(-DHAVE_AES)
 
-  target_link_libraries(minizip aes)
-  target_link_libraries(minizip aes)
+  target_link_libraries(minizip-static aes)
+  target_link_libraries(minizip-shared aes)
 
 #  install(TARGETS aes EXPORT minizip-exports
 #    INCLUDES DESTINATION "include"
