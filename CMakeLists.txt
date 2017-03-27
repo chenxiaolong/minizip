@@ -83,7 +83,7 @@ endif()
 # create minizip library
 add_library(minizip-static STATIC ${MINIZIP_SRC} ${MINIZIP_PUBLIC_HEADERS})
 add_library(minizip-shared SHARED ${MINIZIP_SRC} ${MINIZIP_PUBLIC_HEADERS})
-target_link_libraries(minizip-shared ZLIB::ZLIB)
+target_link_libraries(minizip-shared ${ZLIB_LIBRARIES})
 
 if(NOT MSVC)
   target_compile_options(minizip-shared PRIVATE -fvisibility=default)
