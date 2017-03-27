@@ -52,13 +52,13 @@ elseif(ANDROID)
   list(APPEND MINIZIP_PUBLIC_HEADERS "ioandroid.h")
 endif()
 
-if(UNIX)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-endif()
-
 if(NOT MSVC)
   add_definitions(
     -D_LARGEFILE64_SOURCE
+  )
+
+  add_compile_options(
+    -O3
   )
 
   add_compile_options(
