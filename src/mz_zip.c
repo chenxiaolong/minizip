@@ -1,9 +1,8 @@
 /* zip.c -- Zip manipulation
-   Version 2.2.4, November 15th, 2017
+   Version 2.2.5, January 3rd, 2018
    part of the MiniZip project
 
    Copyright (C) 2010-2017 Nathan Moinvaziri
-     Modifications for AES, PKWARE disk spanning
      https://github.com/nmoinvaz/minizip
    Copyright (C) 2009-2010 Mathias Svensson
      Modifications for Zip64 support
