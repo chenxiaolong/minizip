@@ -87,7 +87,9 @@ endif()
 
 if(NOT MSVC)
     add_compile_options(-O3)
+endif()
 
+if(UNIX)
     list(APPEND MINIZIP_SRC "src/mz_os_posix.c")
     list(APPEND MINIZIP_PUBLIC_HEADERS "src/mz_os_posix.h")
 
