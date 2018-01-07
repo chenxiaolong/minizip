@@ -291,47 +291,33 @@ endif()
 # Create minizip library
 source_group("Minizip" FILES ${MINIZIP_SRC} ${MINIZIP_PUBLIC_HEADERS})
 
-add_library(${PROJECT_NAME}-static STATIC
-                ${MINIZIP_SRC} ${MINIZIP_PUBLIC_HEADERS}
-                ${AES_SRC} ${AES_PUBLIC_HEADERS}
-                ${BZIP2_SRC} ${BZIP2_PUBLIC_HEADERS}
-                ${LZMA_SRC} ${LZMA_PUBLIC_HEADERS})
-add_library(${PROJECT_NAME}-shared SHARED
+add_library(${PROJECT_NAME}
                 ${MINIZIP_SRC} ${MINIZIP_PUBLIC_HEADERS}
                 ${AES_SRC} ${AES_PUBLIC_HEADERS}
                 ${BZIP2_SRC} ${BZIP2_PUBLIC_HEADERS}
                 ${LZMA_SRC} ${LZMA_PUBLIC_HEADERS})
 
-set_target_properties(${PROJECT_NAME}-static ${PROJECT_NAME}-shared PROPERTIES LINKER_LANGUAGE C PREFIX "")
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C PREFIX "")
 if(USE_ZLIB)
-    target_link_libraries(${PROJECT_NAME}-static ${ZLIB_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME}-shared ${ZLIB_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
 endif()
 if(USE_LZMA)
-    set_target_properties(${PROJECT_NAME}-static ${PROJECT_NAME}-shared PROPERTIES C_STANDARD 99)
+    set_target_properties(${PROJECT_NAME} PROPERTIES C_STANDARD 99)
 endif()
 if(UNIX)
-    target_link_libraries(${PROJECT_NAME}-static ${LIBBSD_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME}-shared ${LIBBSD_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} ${LIBBSD_LIBRARIES})
 endif()
 
-target_include_directories(${PROJECT_NAME}-static PUBLIC $<INSTALL_INTERFACE:${INSTALL_INC_DIR}>)
-target_include_directories(${PROJECT_NAME}-shared PUBLIC $<INSTALL_INTERFACE:${INSTALL_INC_DIR}>)
+target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:${INSTALL_INC_DIR}>)
 
-if(NOT MSVC)
-    target_compile_options(${PROJECT_NAME}-shared PRIVATE -fvisibility=default)
+if(NOT MSVC AND BUILD_SHARED_LIBS)
+    target_compile_options(${PROJECT_NAME} PRIVATE -fvisibility=default)
 endif()
 
 set_target_properties(
-    ${PROJECT_NAME}-static ${PROJECT_NAME}-shared
+    ${PROJECT_NAME}
     PROPERTIES
     POSITION_INDEPENDENT_CODE 1
-)
-
-set_target_properties(
-    ${PROJECT_NAME}-shared
-    PROPERTIES
-    OUTPUT_NAME ${PROJECT_NAME}
 )
 
 #install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}
@@ -349,7 +335,7 @@ set_target_properties(
 
 if(BUILD_TEST)
     add_executable(minizip "src/minizip.c")
-    target_link_libraries(minizip ${PROJECT_NAME}-static)
+    target_link_libraries(minizip ${PROJECT_NAME})
 
     install(TARGETS minizip
             RUNTIME DESTINATION "bin")
@@ -360,7 +346,7 @@ if(DEFINED MBP_BUILD_TARGET
         AND (${MBP_BUILD_TARGET} STREQUAL android-app
                 OR ${MBP_BUILD_TARGET} STREQUAL desktop))
     install(
-        TARGETS ${PROJECT_NAME}-shared
+        TARGETS ${PROJECT_NAME}
         LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
         RUNTIME DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
         #ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
