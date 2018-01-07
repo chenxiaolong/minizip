@@ -19,13 +19,16 @@ if(NOT DEFINED CMAKE_MACOSX_RPATH)
     set(CMAKE_MACOSX_RPATH 0)
 endif()
 
-set(INSTALL_BIN_DIR "bin" CACHE PATH "Installation directory for executables")
-set(INSTALL_LIB_DIR "lib" CACHE PATH "Installation directory for libraries")
-set(INSTALL_INC_DIR "include" CACHE PATH "Installation directory for headers")
-set(INSTALL_MAN_DIR "share/man" CACHE PATH "Installation directory for manual pages")
-set(INSTALL_PKGCONFIG_DIR "share/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
-
 project("minizip")
+
+include(GNUInstallDirs)
+
+set(INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE PATH "Installation directory for executables")
+set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE PATH "Installation directory for libraries")
+set(INSTALL_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH "Installation directory for headers")
+set(INSTALL_MAN_DIR ${CMAKE_INSTALL_MANDIR} CACHE PATH "Installation directory for manual pages")
+set(INSTALL_PKGCONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig CACHE PATH "Installation directory for pkgconfig (.pc) files")
+set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/minizip CACHE PATH "Installation directory for cmake files.")
 
 set(VERSION "2.2.6")
 
@@ -93,7 +96,17 @@ if(UNIX)
     list(APPEND MINIZIP_SRC "src/mz_os_posix.c")
     list(APPEND MINIZIP_PUBLIC_HEADERS "src/mz_os_posix.h")
 
-    if(NOT ANDROID)
+    set(define_lfs_macros TRUE)
+
+    if(ANDROID)
+        string(REGEX REPLACE "android-([0-9+])" "\\1"
+            android_api "${ANDROID_PLATFORM}")
+        if(${android_api} LESS 24)
+            set(define_lfs_macros FALSE)
+        endif()
+    endif()
+
+    if(define_lfs_macros)
         add_definitions(-D__USE_FILE_OFFSET64)
         add_definitions(-D__USE_LARGEFILE64)
         add_definitions(-D_LARGEFILE64_SOURCE)
@@ -284,8 +297,19 @@ if(USE_LZMA)
     source_group("LZMA\\RangeCoder" FILES ${LZMA_RANGECODER_SRC} ${LZMA_RANGECODER_HEADERS})
 endif()
 
-if(CMAKE_C_COMPILER MATCHES ".*clang" AND NOT ANDROID)
-    add_compile_options(-msse3 -msse4.1 -maes)
+# Enable x86 optimizations if supported
+if(CMAKE_C_COMPILER MATCHES ".*clang")
+    include(CheckCCompilerFlag)
+    macro(enable_option_if_supported option variable)
+        check_c_compiler_flag("-Werror=unused-command-line-argument ${option}" ${variable})
+        if(${variable})
+            add_compile_options(${option})
+        endif()
+    endmacro()
+
+    enable_option_if_supported(-msse3 check_opt_sse3)
+    enable_option_if_supported(-msse4.1 check_opt_sse41)
+    enable_option_if_supported(-maes check_opt_aes)
 endif()
 
 # Create minizip library
@@ -297,7 +321,8 @@ add_library(${PROJECT_NAME}
                 ${BZIP2_SRC} ${BZIP2_PUBLIC_HEADERS}
                 ${LZMA_SRC} ${LZMA_PUBLIC_HEADERS})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C PREFIX "")
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C PREFIX ""
+                      POSITION_INDEPENDENT_CODE 1)
 if(USE_ZLIB)
     target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
 endif()
@@ -314,12 +339,6 @@ if(NOT MSVC AND BUILD_SHARED_LIBS)
     target_compile_options(${PROJECT_NAME} PRIVATE -fvisibility=default)
 endif()
 
-set_target_properties(
-    ${PROJECT_NAME}
-    PROPERTIES
-    POSITION_INDEPENDENT_CODE 1
-)
-
 #install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}
 #        INCLUDES DESTINATION "${INSTALL_INC_DIR}"
 #        RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
@@ -327,7 +346,7 @@ set_target_properties(
 #        LIBRARY DESTINATION "${INSTALL_LIB_DIR}")
 
 #install(EXPORT ${PROJECT_NAME}
-#        DESTINATION "cmake"
+#        DESTINATION "${INSTALL_CMAKE_DIR}"
 #        NAMESPACE "MINIZIP::")
 
 #install(FILES ${MINIZIP_PUBLIC_HEADERS} DESTINATION "${INSTALL_INC_DIR}")
