@@ -373,9 +373,7 @@ if(BUILD_TEST)
 endif()
 
 # DualBootPatcher-specific
-if(DEFINED MBP_BUILD_TARGET
-        AND (${MBP_BUILD_TARGET} STREQUAL android-app
-                OR ${MBP_BUILD_TARGET} STREQUAL desktop))
+if(DEFINED MBP_BUILD_TARGET AND ${MBP_BUILD_TARGET} STREQUAL system)
     install(
         TARGETS ${PROJECT_NAME}
         LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT Libraries
